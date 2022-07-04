@@ -1,0 +1,5 @@
+-Icmd/proto/v1
+-Ipkg/third_party
+--go_out=plugins=grpc:pkg/airTicket/v1
+--go_opt=paths=source_relative
+cmd/proto/v1/airSale.proto

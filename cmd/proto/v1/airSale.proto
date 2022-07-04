@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+package airTickets.airSale.v1;
+option go_package = "airTickets/pkg/airTicket/v1";
+
+import "google/protobuf/timestamp.proto"; // импортируем из другого proto (includes -> third_party)
+import "google/protobuf/duration.proto";
+
+service AirTicketsService { // определение сервиса
+  rpc AirTicketsFinder(TicketRequest) returns(stream ProperFlightTicket);
+}
+
+message TicketRequest {
+  google.protobuf.Timestamp date = 1;
+  string departureAirportCode = 2;
+  string arrivalAirport = 3;
+}
+
+message ProperFlightTicket {
+  int64 id = 1;
+  google.protobuf.Timestamp departureTime = 2;
+  google.protobuf.Duration flyingTime = 3;
+  double ticketCost = 4;
+}
+
+
