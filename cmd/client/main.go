@@ -1,10 +1,12 @@
 package main
 
 import (
-	airTickets "airTickets/pkg/airTicket/v1"
+	proto "airTickets/pkg/gen/proto/v1"
 	"context"
+	"fmt"
 	"github.com/golang/protobuf/ptypes/timestamp"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 	"io"
 	"log"
 	"net"
@@ -33,7 +35,7 @@ func main() {
 }
 
 func execute(addr string) (err error) {
-	conn, err := grpc.Dial(addr, grpc.WithInsecure())
+	conn, err := grpc.Dial(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return err
 	}
@@ -47,15 +49,36 @@ func execute(addr string) (err error) {
 		}
 	}()
 
-	client := airTickets.NewAirTicketsServiceClient(conn)
+	//err = airTicketsFinder(conn)
+	//if err != nil {
+	//	return err
+	//}
+
+	err = stringResp(conn)
+	if err != nil {
+		return err
+	}
+
+	err = stringReqWithID(conn)
+	if err != nil {
+		return err
+	}
+
+	return nil
+
+}
+
+func airTicketsFinder(conn *grpc.ClientConn) error {
+	client := proto.NewAirTicketsServiceClient(conn)
 	ctx, _ := context.WithTimeout(context.Background(), time.Minute*3)
-	stream, err := client.AirTicketsFinder(ctx, &airTickets.TicketRequest{
+	stream, err := client.AirTicketsFinder(ctx, &proto.TicketRequest{
 		Date:                 &timestamp.Timestamp{Seconds: 1657016700},
 		DepartureAirportCode: "KZN",
 		ArrivalAirport:       "PEE",
 	})
 
 	if err != nil {
+		log.Print(err)
 		return err
 	}
 
@@ -65,11 +88,45 @@ func execute(addr string) (err error) {
 			if err == io.EOF {
 				break
 			}
+			log.Print(err)
 			return err
 		}
 		log.Print(response)
 	}
 	log.Print("finished")
-	return nil
 
+	return nil
+}
+
+func stringResp(conn *grpc.ClientConn) error {
+	client := proto.NewHttpSampleClient(conn)
+	ctx := context.Background()
+
+	msg, err := client.StringResp(ctx, &proto.SimpleMsg{
+		Subject: "Новый запрос",
+		Body:    "Что-то там",
+	})
+	if err != nil {
+		log.Print(err)
+		return err
+	}
+
+	log.Print(fmt.Sprintf("We received back this letter: %s", msg))
+	return nil
+}
+
+func stringReqWithID(conn *grpc.ClientConn) error {
+	client := proto.NewHttpSampleClient(conn)
+	ctx := context.Background()
+
+	msg, err := client.StringGetReq(ctx, &proto.Id{
+		Id: 1698,
+	})
+	if err != nil {
+		log.Print(err)
+		return err
+	}
+
+	log.Print(fmt.Sprintf("We received back this letter: %s", msg))
+	return nil
 }

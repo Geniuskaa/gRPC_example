@@ -1,0 +1,36 @@
+syntax="proto3";
+
+package airTickets.httpSample.v1;
+option  go_package  = "airTickets/pkg/httpSample/v1";
+
+import "google/api/annotations.proto";
+
+service HttpSample {
+  rpc StringResp(SimpleMsg) returns (SimpleMsg) {
+    option (google.api.http) = {
+      post: "/test"
+      body: "*"
+    };
+  };
+  rpc StringGetReq(Id) returns (SimpleMsgWithID) {
+    option (google.api.http) = {
+      get: "/get/{id}"
+    };
+  }
+
+}
+
+message SimpleMsg {
+  string subject = 1;
+  string body = 2;
+}
+
+message SimpleMsgWithID {
+  string subject = 1;
+  string body = 2;
+  int64 id = 3;
+}
+
+message Id {
+  int64 id = 1;
+}

@@ -1,7 +1,7 @@
-package app
+package airSale
 
 import (
-	airTickets "airTickets/pkg/airTicket/v1"
+	"airTickets/pkg/gen/proto/v1"
 	"context"
 	"github.com/golang/protobuf/ptypes/duration"
 	"github.com/golang/protobuf/ptypes/timestamp"
@@ -13,25 +13,25 @@ import (
 	"time"
 )
 
-type Server struct {
-	pools []*pgxpool.Pool
+type Service struct {
 	ctx   context.Context
+	pools []*pgxpool.Pool
+	v1.UnimplementedAirTicketsServiceServer
 }
 
-func NewServer(pools []*pgxpool.Pool) *Server {
-	ctx := context.Background()
-	return &Server{pools: pools, ctx: ctx}
+func NewService(ctx context.Context, pools []*pgxpool.Pool) *Service {
+	return &Service{ctx: ctx, pools: pools}
 }
 
-func (s *Server) AirTicketsFinder(request *airTickets.TicketRequest, server airTickets.AirTicketsService_AirTicketsFinderServer) error {
-	log.Print(request)
+func (s Service) AirTicketsFinder(ticket *v1.TicketRequest, stream v1.AirTicketsService_AirTicketsFinderServer) error {
+	log.Print(ticket)
 
 	funcCtx, cancel := context.WithCancel(s.ctx)
 	defer cancel()
 
 	//Как дать знать принимающей стороне, что ждать не стоит из-за возникшей ошибки? - Вернуть err тогда соедининение разорвется
 
-	ch := make(chan airTickets.ProperFlightTicket, 3)
+	ch := make(chan v1.ProperFlightTicket, 3)
 
 	for i := 0; i < 3; i++ {
 
@@ -43,15 +43,12 @@ func (s *Server) AirTicketsFinder(request *airTickets.TicketRequest, server airT
 
 		go func(conn *pgxpool.Conn) {
 			defer conn.Release()
-
 			latency := rand.Int63n(10) + 1
 			time.Sleep(time.Second * time.Duration(latency))
-
 			row := conn.QueryRow(connCtx, `SELECT id,departure_time,flying_time,ticket_cost from air_tickets 
-			where departure_airport=$1 and arrival_airport=$2 `,
-				request.DepartureAirportCode, request.ArrivalAirport)
+				where departure_airport=$1 and arrival_airport=$2 `, ticket.DepartureAirportCode, ticket.ArrivalAirport)
 
-			var ticket = airTickets.ProperFlightTicket{
+			var ticket = v1.ProperFlightTicket{
 				Id:            0,
 				DepartureTime: &timestamp.Timestamp{Seconds: 10},
 				FlyingTime:    &duration.Duration{Seconds: 10},
@@ -79,7 +76,9 @@ func (s *Server) AirTicketsFinder(request *airTickets.TicketRequest, server airT
 
 			ch <- ticket
 			log.Print("I am goroutine and i finish work")
+
 			return
+
 		}(conn)
 
 	}
@@ -88,7 +87,7 @@ func (s *Server) AirTicketsFinder(request *airTickets.TicketRequest, server airT
 	for i := 0; i < 3; i++ {
 		select {
 		case t := <-ch:
-			err := server.Send(&t)
+			err := stream.Send(&t)
 			if err != nil {
 				continue
 			}

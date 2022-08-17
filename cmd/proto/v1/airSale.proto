@@ -1,7 +1,7 @@
 syntax = "proto3";
 
 package airTickets.airSale.v1;
-option go_package = "airTickets/pkg/airTicket/v1";
+option go_package = "airTickets/pkg/airSale/v1";
 
 import "google/protobuf/timestamp.proto"; // импортируем из другого proto (includes -> third_party)
 import "google/protobuf/duration.proto";

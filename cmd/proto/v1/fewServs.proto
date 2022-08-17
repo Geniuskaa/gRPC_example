@@ -1,0 +1,22 @@
+syntax="proto3";
+
+package fewServs;
+
+option go_package = "pkg/gen/fewServs/v1";
+
+service Main {
+  rpc UserRespHanger(UserMsg) returns (SystemMsg) {}
+}
+
+service Minor {
+  rpc MainRespHanger(UserMsg) returns (SystemMsg) {}
+}
+
+message UserMsg {
+  string msg = 1;
+}
+
+message SystemMsg {
+  bool everyThingOK = 1;
+  string msg = 2;
+}

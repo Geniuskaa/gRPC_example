@@ -1,0 +1,11 @@
+POST http://localhost:8888/test
+Content-Type: application/json
+
+{
+  "subject": "something",
+  "body": "nobody"
+}
+
+###
+
+GET http://localhost:8888/get/574
